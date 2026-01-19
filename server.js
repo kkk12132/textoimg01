@@ -5,6 +5,7 @@ import cors from "cors";
 dotenv.config();
 
 const app = express();
+
 app.use(cors());
 app.use(express.json());
 
@@ -27,16 +28,17 @@ app.post("/generate-image", async (req, res) => {
       return res.status(400).json({ error: "Prompt required" });
     }
 
-    if (!process.env.HUGGINGFACE_API_KEY) {
-      return res.status(500).json({ error: "Hugging Face API key not set" });
-    }
+    // 👇 REPLACE THIS WITH YOUR ACTUAL HUGGING FACE API KEY
+    const API_KEY = "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";
+    
+    console.log("Using API key:", API_KEY.substring(0, 10) + "...");
 
     const response = await fetch(
       "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0",
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
+          Authorization: `Bearer ${API_KEY}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ inputs: prompt }),
@@ -54,7 +56,6 @@ app.post("/generate-image", async (req, res) => {
 
     const arrayBuffer = await response.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
-
     res.set("Content-Type", "image/png");
     res.send(buffer);
     
@@ -72,5 +73,3 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
-
-
