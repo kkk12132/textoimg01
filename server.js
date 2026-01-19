@@ -28,7 +28,7 @@ app.post("/generate-image", async (req, res) => {
     }
 
     // Get API key from environment variable
-    const API_KEY = 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;
+    const API_KEY = process.env.HUGGINGFACE_API_KEY;
     
     if (!API_KEY) {
       console.error("❌ No API key found!");
@@ -125,3 +125,4 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
+
