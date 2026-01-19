@@ -38,7 +38,7 @@ app.post("/generate-image", async (req, res) => {
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${API_KEY}`,
+          Authorization: `Bearer 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`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ inputs: prompt }),
@@ -74,3 +74,4 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
+
