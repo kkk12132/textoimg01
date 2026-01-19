@@ -5,7 +5,6 @@ import cors from "cors";
 dotenv.config();
 
 const app = express();
-
 app.use(cors());
 app.use(express.json());
 
@@ -28,13 +27,14 @@ app.post("/generate-image", async (req, res) => {
       return res.status(400).json({ error: "Prompt required" });
     }
 
-    // 👇 REPLACE THIS WITH YOUR ACTUAL HUGGING FACE API KEY
-    const API_KEY = "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";
+    // Get API key from environment variable or use hardcoded value
+    const API_KEY = process.env.HUGGINGFACE_API_KEY || "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";
     
     console.log("Using API key:", API_KEY.substring(0, 10) + "...");
 
+    // FIXED: Updated endpoint from api-inference to router
     const response = await fetch(
-      "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0",
+      "https://router.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0",
       {
         method: "POST",
         headers: {
@@ -56,6 +56,7 @@ app.post("/generate-image", async (req, res) => {
 
     const arrayBuffer = await response.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
+
     res.set("Content-Type", "image/png");
     res.send(buffer);
     
