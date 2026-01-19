@@ -41,14 +41,14 @@ app.post("/generate-image", async (req, res) => {
     console.log("Using HF token:", HF_TOKEN.substring(0, 6) + "...");
 
     // 🔥 IMAGE GENERATION (OFFICIAL WAY)
-    const image = await client.textToImage({
-      provider: "fal-ai",
-      model: "zai-org/GLM-Image",
-      inputs: prompt,
-      parameters: {
-        num_inference_steps: 5,
-      },
-    });
+   const image = await client.textToImage({
+  provider: "hf-inference",
+  model: "stabilityai/stable-diffusion-2-1",
+  inputs: prompt,
+  parameters: {
+    num_inference_steps: 20,
+  },
+});
 
     // Convert Blob → Buffer
     const buffer = Buffer.from(await image.arrayBuffer());
@@ -72,3 +72,4 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
+
