@@ -39,7 +39,7 @@ app.post("/generate-image", async (req, res) => {
     
     // 🔥 IMAGE GENERATION (OFFICIAL WAY)
     const image = await client.textToImage({
-      model: "runwayml/stable-diffusion-v1-5",
+      model: "black-forest-labs/FLUX.1-schnell",
       inputs: prompt,
     });
 
