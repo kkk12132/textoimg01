@@ -42,10 +42,9 @@ app.post("/generate-image", async (req, res) => {
 
     // Try multiple working models
     const models = [
-      "stabilityai/stable-diffusion-2-1",
-      "runwayml/stable-diffusion-v1-5",
-      "CompVis/stable-diffusion-v1-4"
-    ];
+  "stabilityai/sdxl-turbo",
+  "runwayml/stable-diffusion-v1-5"
+];
 
     let lastError = null;
     
@@ -125,5 +124,6 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
+
 
 
