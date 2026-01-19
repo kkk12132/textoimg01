@@ -53,22 +53,22 @@ app.post("/generate-image", async (req, res) => {
       try {
         console.log(`Trying model: ${model}`);
         
-        const response = await fetch(
-          `https://api-inference.huggingface.co/models/${model}`,
-          {
-            method: "POST",
-            headers: {
-              "Authorization": `Bearer ${API_KEY}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ 
-              inputs: prompt,
-              options: {
-                wait_for_model: true
-              }
-            }),
-          }
-        );
+       const response = await fetch(
+  `https://router.huggingface.co/hf-inference/models/${model}`,
+  {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      inputs: prompt,
+      options: {
+        wait_for_model: true
+      }
+    }),
+  }
+);
 
         console.log(`Response status: ${response.status}`);
 
@@ -125,4 +125,5 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
+
 
