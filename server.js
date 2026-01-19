@@ -1,6 +1,7 @@
 import dotenv from "dotenv";
 import express from "express";
 import cors from "cors";
+import fetch from "node-fetch";
 
 dotenv.config();
 
@@ -32,57 +33,57 @@ app.post("/generate-image", async (req, res) => {
     
     console.log("Using API key:", API_KEY.substring(0, 10) + "...");
 
-    // Try multiple models in case one fails
-    const models = [
-      "black-forest-labs/FLUX.1-schnell",
-      "stabilityai/stable-diffusion-xl-base-1.0",
-      "runwayml/stable-diffusion-v1-5"
-    ];
-
-    let lastError = null;
+    // Use the correct HF Inference endpoint format for text-to-image
+    const model = "black-forest-labs/FLUX.1-schnell";
+    const API_URL = `https://router.huggingface.co/hf-inference/models/${model}`;
     
-    for (const model of models) {
-      try {
-        console.log(`Trying model: ${model}`);
-        
-        const response = await fetch(
-          `https://api-inference.huggingface.co/models/${model}`,
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${API_KEY}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ inputs: prompt }),
-          }
-        );
+    console.log(`Generating image with model: ${model}`);
+    
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ 
+        inputs: prompt
+      }),
+    });
 
-        if (response.ok) {
-          const arrayBuffer = await response.arrayBuffer();
-          const buffer = Buffer.from(arrayBuffer);
-
-          res.set("Content-Type", "image/png");
-          res.send(buffer);
-          
-          console.log(`✅ Image generated successfully using ${model}`);
-          return;
-        } else {
-          const errorText = await response.text();
-          console.log(`❌ Model ${model} failed:`, errorText);
-          lastError = errorText;
-        }
-      } catch (err) {
-        console.log(`❌ Model ${model} error:`, err.message);
-        lastError = err.message;
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`❌ API Error (${response.status}):`, errorText);
+      
+      // Handle model loading state
+      if (errorText.includes("loading") || errorText.includes("currently loading")) {
+        return res.status(503).json({ 
+          error: "Model is loading", 
+          details: "The model is currently loading. Please try again in a few moments.",
+          retryAfter: 20
+        });
       }
+      
+      return res.status(500).json({ 
+        error: "Image generation failed", 
+        details: errorText 
+      });
     }
 
-    // If all models failed
-    console.error("❌ All models failed. Last error:", lastError);
-    return res.status(500).json({ 
-      error: "All image generation models failed", 
-      details: lastError 
-    });
+    const arrayBuffer = await response.arrayBuffer();
+    
+    if (arrayBuffer.byteLength === 0) {
+      console.error("❌ Empty response from API");
+      return res.status(500).json({ 
+        error: "Empty response from model",
+        details: "The model returned an empty response. Please try again."
+      });
+    }
+
+    const buffer = Buffer.from(arrayBuffer);
+    res.set("Content-Type", "image/png");
+    res.send(buffer);
+    
+    console.log(`✅ Image generated successfully (${buffer.length} bytes)`);
 
   } catch (err) {
     console.error("❌ Image generation error:", err);
