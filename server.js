@@ -43,7 +43,7 @@ app.post("/generate-image", async (req, res) => {
     // 🔥 IMAGE GENERATION (OFFICIAL WAY)
    const image = await client.textToImage({
      provider: "hf-inference",
-     model: "stabilityai/stable-diffusion-2-1",
+     model: "dreamlike-art/dreamlike-photoreal-2.0",
      inputs: prompt,
      parameters: {
      num_inference_steps: 20,
@@ -72,5 +72,6 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
+
 
 
