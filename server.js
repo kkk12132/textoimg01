@@ -43,7 +43,12 @@ app.post("/generate-image", async (req, res) => {
     // 🔥 IMAGE GENERATION (OFFICIAL WAY)
    const image = await client.textToImage({
   provider: "hf-inference",
-  model: "stabilityai/stable-diffusion-2-1",
+  const image = await client.textToImage({
+  provider: "hf-inference",
+  model: "runwayml/stable-diffusion-v1-5",
+  inputs: prompt,
+});
+
   inputs: prompt,
 });
 
@@ -69,6 +74,7 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
+
 
 
 
