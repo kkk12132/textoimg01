@@ -1,0 +1,16 @@
+{
+  "name": "image-generator",
+  "version": "1.0.0",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^10.0.0",
+    "express": "^4.21.1",
+    "mongoose": "^8.9.3",
+    "node-fetch": "^2.7.0"
+  }
+}
