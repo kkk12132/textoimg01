@@ -27,62 +27,90 @@ app.post("/generate-image", async (req, res) => {
       return res.status(400).json({ error: "Prompt required" });
     }
 
-    // Get API key from environment variable or use hardcoded value
-    const API_KEY = process.env.HUGGINGFACE_API_KEY || "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";
+    // Get API key from environment variable
+    const API_KEY = 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;
+    
+    if (!API_KEY) {
+      console.error("❌ No API key found!");
+      return res.status(500).json({ 
+        error: "API key not configured",
+        details: "Please set HUGGINGFACE_API_KEY environment variable in Render dashboard"
+      });
+    }
     
     console.log("Using API key:", API_KEY.substring(0, 10) + "...");
 
-    // Use the correct HF Inference endpoint format for text-to-image
-    const model = "black-forest-labs/FLUX.1-schnell";
-    const API_URL = `https://router.huggingface.co/hf-inference/models/${model}`;
-    
-    console.log(`Generating image with model: ${model}`);
-    
-    const response = await fetch(API_URL, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ 
-        inputs: prompt
-      }),
-    });
+    // Try multiple working models
+    const models = [
+      "stabilityai/stable-diffusion-2-1",
+      "runwayml/stable-diffusion-v1-5",
+      "CompVis/stable-diffusion-v1-4"
+    ];
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`❌ API Error (${response.status}):`, errorText);
-      
-      // Handle model loading state
-      if (errorText.includes("loading") || errorText.includes("currently loading")) {
-        return res.status(503).json({ 
-          error: "Model is loading", 
-          details: "The model is currently loading. Please try again in a few moments.",
-          retryAfter: 20
-        });
+    let lastError = null;
+    
+    for (const model of models) {
+      try {
+        console.log(`Trying model: ${model}`);
+        
+        const response = await fetch(
+          `https://api-inference.huggingface.co/models/${model}`,
+          {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${API_KEY}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ 
+              inputs: prompt,
+              options: {
+                wait_for_model: true
+              }
+            }),
+          }
+        );
+
+        console.log(`Response status: ${response.status}`);
+
+        if (response.ok) {
+          const arrayBuffer = await response.arrayBuffer();
+          
+          if (arrayBuffer.byteLength === 0) {
+            console.log(`❌ Model ${model} returned empty response`);
+            lastError = "Empty response from model";
+            continue;
+          }
+
+          const buffer = Buffer.from(arrayBuffer);
+          res.set("Content-Type", "image/png");
+          res.send(buffer);
+          
+          console.log(`✅ Image generated successfully using ${model} (${buffer.length} bytes)`);
+          return;
+        } else {
+          const errorText = await response.text();
+          console.log(`❌ Model ${model} failed (${response.status}):`, errorText);
+          lastError = errorText;
+          
+          // If model is loading, wait before trying next
+          if (errorText.includes("loading") || errorText.includes("currently loading")) {
+            console.log("Model is loading, waiting 3 seconds...");
+            await new Promise(resolve => setTimeout(resolve, 3000));
+          }
+        }
+      } catch (err) {
+        console.log(`❌ Model ${model} error:`, err.message);
+        lastError = err.message;
       }
-      
-      return res.status(500).json({ 
-        error: "Image generation failed", 
-        details: errorText 
-      });
     }
 
-    const arrayBuffer = await response.arrayBuffer();
-    
-    if (arrayBuffer.byteLength === 0) {
-      console.error("❌ Empty response from API");
-      return res.status(500).json({ 
-        error: "Empty response from model",
-        details: "The model returned an empty response. Please try again."
-      });
-    }
-
-    const buffer = Buffer.from(arrayBuffer);
-    res.set("Content-Type", "image/png");
-    res.send(buffer);
-    
-    console.log(`✅ Image generated successfully (${buffer.length} bytes)`);
+    // If all models failed
+    console.error("❌ All models failed. Last error:", lastError);
+    return res.status(500).json({ 
+      error: "All image generation models failed", 
+      details: lastError,
+      suggestion: "Please check: 1) Your API token is valid and has not expired, 2) Try generating a new token at https://huggingface.co/settings/tokens"
+    });
 
   } catch (err) {
     console.error("❌ Image generation error:", err);
@@ -97,4 +125,3 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
-
