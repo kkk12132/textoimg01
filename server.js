@@ -32,35 +32,58 @@ app.post("/generate-image", async (req, res) => {
     
     console.log("Using API key:", API_KEY.substring(0, 10) + "...");
 
-    // FIXED: Updated endpoint from api-inference to router
-    const response = await fetch(
-      "https://router.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer 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`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ inputs: prompt }),
-      }
-    );
+    // Try multiple models in case one fails
+    const models = [
+      "black-forest-labs/FLUX.1-schnell",
+      "stabilityai/stable-diffusion-xl-base-1.0",
+      "runwayml/stable-diffusion-v1-5"
+    ];
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("❌ Hugging Face API Error:", errorText);
-      return res.status(500).json({ 
-        error: "Hugging Face API failed", 
-        details: errorText 
-      });
+    let lastError = null;
+    
+    for (const model of models) {
+      try {
+        console.log(`Trying model: ${model}`);
+        
+        const response = await fetch(
+          `https://api-inference.huggingface.co/models/${model}`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${API_KEY}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ inputs: prompt }),
+          }
+        );
+
+        if (response.ok) {
+          const arrayBuffer = await response.arrayBuffer();
+          const buffer = Buffer.from(arrayBuffer);
+
+          res.set("Content-Type", "image/png");
+          res.send(buffer);
+          
+          console.log(`✅ Image generated successfully using ${model}`);
+          return;
+        } else {
+          const errorText = await response.text();
+          console.log(`❌ Model ${model} failed:`, errorText);
+          lastError = errorText;
+        }
+      } catch (err) {
+        console.log(`❌ Model ${model} error:`, err.message);
+        lastError = err.message;
+      }
     }
 
-    const arrayBuffer = await response.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    // If all models failed
+    console.error("❌ All models failed. Last error:", lastError);
+    return res.status(500).json({ 
+      error: "All image generation models failed", 
+      details: lastError 
+    });
 
-    res.set("Content-Type", "image/png");
-    res.send(buffer);
-    
-    console.log("✅ Image generated successfully");
   } catch (err) {
     console.error("❌ Image generation error:", err);
     res.status(500).json({ 
@@ -74,4 +97,3 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
-
